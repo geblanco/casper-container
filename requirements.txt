@@ -1,0 +1,1 @@
+git+git://github.com/geblanco/i3-py@master#egg=i3-py
