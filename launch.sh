@@ -121,7 +121,11 @@ start() {
 }
 
 show() {
-    i3-msg 'scratchpad show'
+    if [[ "${HIDE_BY}" == "scratchpad" ]]; then
+        i3-msg 'scratchpad show'
+    else
+        i3-msg "[con_mark='${DEFAULT_CONTAINER_NAME}'] move to workspace $(get_focused_workspace)"
+    fi
 }
 
 if is_casper_running; then

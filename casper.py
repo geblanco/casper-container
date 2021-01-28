@@ -2,10 +2,15 @@ import i3
 import json
 import argparse
 
+from os import path
+from pathlib import Path
+
+
 previous_focus = None
 previous_workspace = None
 casper_marks = None
 skip_frame = 0
+config = None
 
 
 def parse_flags():
@@ -94,6 +99,31 @@ def childs(**kwargs):
     return childs
 
 
+def bash_to_dict(cfg_path):
+    ret = {}
+    if Path(cfg_path).exists():
+        reg = re.compile(r"(?P<name>\w+)(\=['\"]?(?P<value>[^'\"]+)['\"]?)")
+        for line in open(cfg_path):
+            m = reg.match(line.strip())
+            if m:
+                name = m.group("name")
+                value = ""
+                if m.group("value"):
+                    value = m.group("value")
+                    ret[name.lower()] = value
+    return ret
+
+
+def parse_config():
+    home = str(Path.home())
+    default_config_path = path.join(home, ".config", "casper", "default.config")
+    config_path = path.join(home, ".config", "casper", "config")
+    default_config = bash_to_dict(default_config_path)
+    config = bash_to_dict(config_path)
+    default_config.update(**config)
+    return default_config
+
+
 def print_parent_id(child_name):
     nodes = filter(name=child_name)
     if len(nodes):
@@ -132,6 +162,25 @@ def get_window_name_from_id(id):
     return wins
 
 
+def hide_container():
+    global config, casper_marks
+    if config is None:
+        config = parse_config()
+
+    if config["hide_by"] == "scratchpad":
+        # Trick to make it work, as it has lost focus, first call regains it,
+        # second really hide the scratchpad. This can generate an infinite loop
+        # of focus-refocus, unsubscribe and resubscribe again
+        i3.scratchpad("show")
+        i3.scratchpad("show")
+    else:
+        mark = casper_marks
+        if isinstance(casper_marks, list):
+            mark = casper_marks[0]
+
+        i3.command(f"[con_mark='{mark}'] move to workspace 11")
+
+
 def focus_action(window_data, tree, subscription):
     global previous_focus, previous_workspace, casper_marks
 
@@ -146,12 +195,7 @@ def focus_action(window_data, tree, subscription):
         )
         if previous_focus in casper_windows and focus not in casper_windows:
             subscription.close()
-
-            # Trick to make it work, as it has lost focus, first call regains it,
-            # second really hide the scratchpad. This can generate an infinite loop
-            # of focus-refocus, unsubscribe and resubscribe again
-            i3.scratchpad("show")
-            i3.scratchpad("show")
+            hide_container()
             setup_listener(casper_marks)
 
         previous_focus = focus
