@@ -1,3 +1,4 @@
+import re
 import i3
 import json
 import argparse
@@ -60,7 +61,7 @@ def filter(tree=None, function=None, **conditions):
         for key, value in conditions.items():
             if key in tree and tree[key] == value:
                 matches.append(tree)
-                
+
     for nodes in ["nodes", "floating_nodes", "list"]:
         if nodes in tree:
             for node in tree[nodes]:
@@ -116,7 +117,9 @@ def bash_to_dict(cfg_path):
 
 def parse_config():
     home = str(Path.home())
-    default_config_path = path.join(home, ".config", "casper", "default.config")
+    default_config_path = path.join(
+        home, ".config", "casper", "default.config"
+    )
     config_path = path.join(home, ".config", "casper", "config")
     default_config = bash_to_dict(default_config_path)
     config = bash_to_dict(config_path)
@@ -146,7 +149,7 @@ def get_focused_workspace(prop=None):
     focused = [w for w in workspaces if w["focused"]]
     if len(focused) == 0:
         raise ValueError(
-            "Unable to fetch current workspace" + 
+            "Unable to fetch current workspace" +
             json.dumps(i3.get_workspaces(), indent=2)
         )
     focused = focused[0]
@@ -191,7 +194,9 @@ def focus_action(window_data, tree, subscription):
         print(
             f"Got new focus {get_window_name_from_id(focus)}"
             f", previous {get_window_name_from_id(previous_focus)}"
-            f"\n\tCaspers {[get_window_name_from_id(c) for c in casper_windows]}"
+            "\n\tCaspers " + str([
+                get_window_name_from_id(c) for c in casper_windows
+            ])
         )
         if previous_focus in casper_windows and focus not in casper_windows:
             subscription.close()

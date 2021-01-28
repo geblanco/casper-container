@@ -117,7 +117,7 @@ start() {
     mark_container
     setup_container
     move_to_scratchpad "${current_ws}"
-    python3 $casper_script --listen --marks "${DEFAULT_CONTAINER_NAME}" >~/.config/casper/log &
+    python3 $casper_script --listen --marks "${DEFAULT_CONTAINER_NAME}" >~/.config/casper/log 2>&1 &
 }
 
 show() {
