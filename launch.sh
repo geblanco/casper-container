@@ -31,8 +31,7 @@ create_container() {
     local nof_wins="${1:-$CONTAINER_WINS}"; shift
     local spawn_cmd="${1:-$WIN_SPAWN_CMD}"
     i3-msg "workspace 11; append_layout ${layout_path}"
-    # echo "layout path $layout_path, $nof_wins, $spawn_cmd"
-    for i in $(seq 1, $nof_wins); do
+    for (( i = 1; i <= $nof_wins; i++ )); do
         "${spawn_cmd}" --title="Casper Win ${i}"
     done
 }
