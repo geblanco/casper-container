@@ -13,6 +13,7 @@ default_config_path="$HOME/.config/casper/default.config"
 casper_script="$HOME/.config/casper/casper.py"
 config_path="$HOME/.config/casper/config"
 layout_path="$HOME/.config/casper/layout.json"
+log_file="/home/gb/.config/casper/log"
 
 if [[ ! -f $config_path ]]; then
     config_path=$default_config_path
@@ -32,7 +33,7 @@ create_container() {
     local spawn_cmd="${1:-$WIN_SPAWN_CMD}"
     i3-msg "workspace 11; append_layout ${layout_path}"
     for (( i = 1; i <= $nof_wins; i++ )); do
-        "${spawn_cmd}" --title="Casper Win ${i}"
+        "${spawn_cmd}" --title="Casper Win ${i}" &
     done
 }
 
@@ -40,6 +41,11 @@ mark_container() {
     local container_name="${1:-$DEFAULT_CONTAINER_NAME}"; shift
     local nof_wins="${1:-$CONTAINER_WINS}"
     local parent_id=$(python3 $casper_script --child "Casper Win ${nof_wins}")
+    if [[ "${parent_id}" == "" ]]; then
+        sleep 0.5s
+        echo "Could not fetch con_id $(python3 $casper_script --child 'Casper Win ${nof_wins}')"
+        parent_id=$(python3 $casper_script --child "Casper Win ${nof_wins}")
+    fi
     i3-msg "[con_id=$parent_id] mark $container_name"
 }
 
@@ -112,12 +118,13 @@ is_casper_running() {
 }
 
 start() {
+    echo "Start Casper" >> $log_file
     local current_ws=$(get_focused_workspace)
-    create_container
-    mark_container
-    setup_container
-    move_to_scratchpad "${current_ws}"
-    python3 $casper_script --listen --marks "${DEFAULT_CONTAINER_NAME}" >~/.config/casper/log 2>&1 &
+    create_container 2>&1 >> $log_file
+    mark_container 2>&1 >> $log_file
+    setup_container 2>&1 >> $log_file
+    move_to_scratchpad "${current_ws}" 2>&1 >> $log_file
+    python3 $casper_script --listen --marks "${DEFAULT_CONTAINER_NAME}" 2>&1 >> $log_file
 }
 
 show() {
