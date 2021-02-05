@@ -55,15 +55,20 @@ setup_container() {
     local height="${1:-$CONTAINER_HEIGHT}"; shift
     local x="${1:-$CONTAINER_X}"; shift
     local y="${1:-$CONTAINER_Y}"; shift
-    local target_width=$(get_target_size $width $height | head -n 1)
-    local target_height=$(get_target_size $width $height | tail -n 1)
+    local mon_data="$(python3 ${casper_script} --get_active_display_rect)"
+    local target_wh_str=$(get_target_size $width $height "${mon_data}")
+    local target_width=$(echo "${target_wh_str}" | head -n 1)
+    local target_height=$(echo "${target_wh_str}" | tail -n 1)
+    local target_xy_str=$(get_target_pos $x $y "${mon_data}")
+    local target_x=$(echo "${target_xy_str}" | head -n 1)
+    local target_y=$(echo "${target_xy_str}" | tail -n 1)
     # set:
     # - floating
     # - position (guess focused ws or default to screen 1) + config position
     # - size + config size (or default half screen)
     str="[con_mark=\"${container_name}\"] "
     str+="resize set ${target_width} ${target_height}, "
-    str+="move position ${x} ${y}"
+    str+="move position ${target_x} ${target_y}"
     echo "${str}"
     i3-msg "${str}"
 }
@@ -78,14 +83,6 @@ move_to_scratchpad() {
     i3-msg "workspace ${target_ws}; scratchpad show"
 }
 
-# required gdk
-get_resolution() {
-    res=$(python3 -c "from gi.repository import Gdk; screen=Gdk.Screen.get_default(); \
-    geo = screen.get_monitor_geometry(screen.get_primary_monitor()); \
-    print(geo.width); print(geo.height)" 2>/dev/null)
-    echo "${res}"
-}
-
 get_focused_workspace() {
     ws=$(python3 $casper_script --workspace name)
     echo $ws
@@ -94,12 +91,25 @@ get_focused_workspace() {
 get_target_size() {
     local width="${1:-$CONTAINER_WIDTH}"; shift
     local height="${1:-$CONTAINER_HEIGHT}"; shift
-    local full_width=$(get_resolution | head -n 1)
-    local full_height=$(get_resolution | tail -n 1)
+    local mon_data="${1:-$(python3 ${casper_script} --get_active_display_rect)}"
+    local full_width=$(echo $mon_data | awk '{print $1}')
+    local full_height=$(echo $mon_data | awk '{print $2}')
     local target_width=$(python3 -c "print(int($full_width * ($width / 100)))")
     local target_height=$(python3 -c "print(int($full_height * ($height / 100)))")
     echo $target_width
     echo $target_height
+}
+
+get_target_pos() {
+    local x="${1:-$CONTAINER_X}"; shift
+    local y="${1:-$CONTAINER_Y}"; shift
+    local mon_data="${1:-$(python3 ${casper_script} --get_active_display_rect)}"
+    local full_x=$(echo $mon_data | awk '{print $3}')
+    local full_y=$(echo $mon_data | awk '{print $4}')
+    local target_x=$(( $x + $full_x ))
+    local target_y=$(( $y + $full_y ))
+    echo $target_x
+    echo $target_y
 }
 
 is_casper_running() {
@@ -133,6 +143,7 @@ show() {
     else
         i3-msg "[con_mark='${DEFAULT_CONTAINER_NAME}'] move to workspace $(get_focused_workspace)"
     fi
+    setup_container 2>&1 >> $log_file
 }
 
 if is_casper_running; then

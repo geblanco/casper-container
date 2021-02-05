@@ -6,6 +6,11 @@ import argparse
 from os import path
 from pathlib import Path
 
+import gi
+gi.require_version('Gdk', '3.0')
+
+from gi.repository import Gdk  # noqa: E402
+
 
 previous_focus = None
 previous_workspace = None
@@ -35,6 +40,10 @@ def parse_flags():
     parser.add_argument(
         "--get_childs", type=str, required=False,
         help="Get child ids of a given container mark"
+    )
+    parser.add_argument(
+        "--get_active_display_rect", action="store_true", required=False,
+        help="Get currently active display's data (width, height, x, y)"
     )
     args = parser.parse_args()
     if args.listen and len(args.marks) == 0:
@@ -165,6 +174,22 @@ def get_window_name_from_id(id):
     return wins
 
 
+def get_active_display_rect():
+    # get pointer
+    display = Gdk.Display.get_default()
+    dev_manager = Gdk.Display.get_device_manager(display)
+    pointer = Gdk.DeviceManager.get_client_pointer(dev_manager)
+    pointer_position = pointer.get_position()
+    pointer_x, pointer_y = pointer_position.x, pointer_position.y
+
+    # get display pointer is in
+    active_display = display.get_monitor_at_point(pointer_x, pointer_y)
+    active_rect = active_display.get_geometry()
+    width, height = active_rect.width, active_rect.height
+    x, y = active_rect.x, active_rect.y
+    return width, height, x, y
+
+
 def hide_container():
     global config, casper_marks
     if config is None:
@@ -229,5 +254,8 @@ if __name__ == "__main__":
         print(get_focused_workspace(prop=args.workspace))
     if args.get_childs is not None:
         print(' '.join([str(s) for s in get_casper_windows(args.get_childs)]))
+    if args.get_active_display_rect:
+        w, h, x, y = get_active_display_rect()
+        print(f"{w} {h} {x} {y}")
     if args.listen:
         setup_listener(args.marks)
