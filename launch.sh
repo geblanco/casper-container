@@ -11,6 +11,7 @@
 
 default_config_path="$HOME/.config/casper/default.config"
 casper_script="$HOME/.config/casper/casper.py"
+checkbox_script="$HOME/.config/casper/checkbox.py"
 config_path="$HOME/.config/casper/config"
 layout_path="$HOME/.config/casper/layout.json"
 log_dir="$HOME/.config/casper/log"
@@ -72,6 +73,7 @@ setup_container() {
     str+="move position ${target_x} ${target_y}"
     echo "${str}"
     i3-msg "${str}"
+    # "${checkbox_script}" -x "${target_x}" -y "${target_height}"
 }
 
 move_to_scratchpad() {

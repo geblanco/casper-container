@@ -209,6 +209,17 @@ def hide_container():
         i3.command(f"[con_mark='{mark}'] move to workspace 11")
 
 
+def box_is_checked():
+    ret = False
+    checkbox_file = Path("/tmp/casper_checkbox_value")
+    if checkbox_file.exists():
+        try:
+            value = bool(open(str(checkbox_file)).read())
+        except Exception as e:
+            ret = False
+    return ret
+
+
 def focus_action(window_data, tree, subscription):
     global previous_focus, previous_workspace, casper_marks
 
@@ -223,7 +234,11 @@ def focus_action(window_data, tree, subscription):
                 get_window_name_from_id(c) for c in casper_windows
             ])
         )
-        if previous_focus in casper_windows and focus not in casper_windows:
+        if (
+            previous_focus in casper_windows and
+            focus not in casper_windows and
+            not box_is_checked()
+        ):
             subscription.close()
             hide_container()
             setup_listener(casper_marks)
