@@ -13,7 +13,8 @@ default_config_path="$HOME/.config/casper/default.config"
 casper_script="$HOME/.config/casper/casper.py"
 config_path="$HOME/.config/casper/config"
 layout_path="$HOME/.config/casper/layout.json"
-log_file="/home/gb/.config/casper/log"
+log_dir="$HOME/.config/casper/log"
+log_file="${log_dir}/$(date +%Y-%m-%d).log"
 
 if [[ ! -f $config_path ]]; then
     config_path=$default_config_path
@@ -128,6 +129,7 @@ is_casper_running() {
 }
 
 start() {
+    [[ ! -d "${log_dir}" ]] && mkdir -p "${log_dir}"
     echo "Start Casper" >> $log_file
     local current_ws=$(get_focused_workspace)
     create_container 2>&1 >> $log_file
